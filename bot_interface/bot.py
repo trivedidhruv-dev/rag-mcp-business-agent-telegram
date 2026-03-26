@@ -46,7 +46,10 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Check Docs
         docs_path = os.path.join(os.getcwd(), "rag", "documents")
-        doc_count = len([f for f in os.listdir(docs_path) if f.endswith(('.pdf', '.txt'))])
+        if os.path.exists(docs_path):
+            doc_count = len([f for f in os.listdir(docs_path) if f.endswith(('.pdf', '.txt'))])
+        else:
+            doc_count = 0
         
         status_text = (
             "📊 System Status:\n" 

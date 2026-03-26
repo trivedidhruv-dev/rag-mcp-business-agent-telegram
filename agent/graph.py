@@ -64,7 +64,7 @@ def call_model(state: State):
     return {"messages": [response]}
 
 # 3. Define the Router (Conditional Edge)
-def should_continue(state: State) -> Union[str, type(END)]:
+def should_continue(state: State) -> str:
     last_message = state['messages'][-1]
     if last_message.tool_calls:
         return "tools"

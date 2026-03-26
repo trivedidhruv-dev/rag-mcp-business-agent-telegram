@@ -1,4 +1,3 @@
-from mcp.server.fastapi import Context
 from mcp.server import Server
 from mcp.types import Tool, TextContent, ImageContent, EmbeddedResource
 import mcp.server.stdio

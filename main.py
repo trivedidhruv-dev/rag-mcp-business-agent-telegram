@@ -6,9 +6,14 @@ from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from bot_interface.bot import application, setup_bot
+from mcp_server.db_tools import init_db
 
 if __name__ == "__main__":
     load_dotenv()
+    
+    # Initialize the database table if it doesn't exist
+    print("Initializing database...")
+    init_db()
     
     # Check for keys
     if not os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") == "your_telegram_bot_token_here":
