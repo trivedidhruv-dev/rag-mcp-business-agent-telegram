@@ -1,3 +1,4 @@
+import os
 from langchain.tools import tool
 from langchain_community.tools import DuckDuckGoSearchRun
 from rag.retriever import query_rag
@@ -63,8 +64,18 @@ def web_search(query: str):
     company documents. Use this for current events, news, general facts, 
     or legal/tax updates.
     """
-    search = DuckDuckGoSearchRun()
-    result = search.run(query)
+    tavily_api_key = os.environ.get("TAVILY_API_KEY")
+    if tavily_api_key:
+        from tavily import TavilyClient
+        client = TavilyClient(api_key=tavily_api_key)
+        response = client.search(query=query, max_results=5, search_depth="basic")
+        result = "\n\n".join(
+            f"{r['title']}\n{r['url']}\n{r['content']}"
+            for r in response["results"]
+        )
+    else:
+        search = DuckDuckGoSearchRun()
+        result = search.run(query)
     log_tool_use("web_search", {"query": query}, result)
     return result
 
