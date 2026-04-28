@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/dj2313-rag-mcp-business-agent-telegram-badge.png)](https://mseep.ai/app/dj2313-rag-mcp-business-agent-telegram)
+
 # 🤖 RAG + MCP Business Agent
 
 An autonomous, state-of-the-art AI assistant for Telegram, built with **LangGraph**, **Groq (Llama 3.3)**, **ChromaDB**, and **Model Context Protocol (MCP)**.
