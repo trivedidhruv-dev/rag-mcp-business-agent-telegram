@@ -9,6 +9,7 @@ import os
 import requests
 from typing import List
 from langchain_core.embeddings import Embeddings
+from huggingface_hub import InferenceClient
 from langchain_chroma import Chroma
 
 CHROMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chroma_db")
@@ -16,23 +17,19 @@ COLLECTION_NAME = "business_docs"
 
 class HFRouterEmbeddings(Embeddings):
     def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.url = "https://router.huggingface.co/hf-inference/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+        self.client = InferenceClient(
+            model="sentence-transformers/all-MiniLM-L6-v2",
+            token=api_key
+        )
 
     def _embed(self, texts: List[str]) -> List[List[float]]:
-        response = requests.post(
-            self.url,
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json={"inputs": texts}
-        )
-        response.raise_for_status()
-        return response.json()
+        return [self.client.feature_extraction(text).tolist() for text in texts]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return self._embed(texts)
 
     def embed_query(self, text: str) -> List[float]:
-        return self._embed([text])[0]
+        return self.client.feature_extraction(text).tolist()
 
 def get_embeddings():
     hf_token = os.getenv("HF_TOKEN")
