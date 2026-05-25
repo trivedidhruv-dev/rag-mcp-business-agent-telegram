@@ -90,10 +90,9 @@ workflow.add_edge("tools", "agent")
 # 5. Add Persistence
 memory = MemorySaver()
 
-# Compile with interrupt for safety
+# Compile without interrupt so it runs autonomously
 agent_app = workflow.compile(
-    checkpointer=memory,
-    interrupt_before=["tools"]
+    checkpointer=memory
 )
 
 async def get_response(user_input: str, thread_id: str = "default"):
