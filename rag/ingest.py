@@ -1,24 +1,18 @@
 import os
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, DirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from rag.retriever import get_vector_store
 
-DOCUMENTS_PATH = os.path.join(os.getcwd(), "rag", "documents")
+DOCUMENTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
 
 def ingest_documents():
-    """
-    Loads documents from the documents folder, splits them into chunks,
-    and adds them to the Chroma vector store.
-    """
     print(f"Scanning for documents in: {DOCUMENTS_PATH}")
     
-    # Check if directory exists
     if not os.path.exists(DOCUMENTS_PATH):
         os.makedirs(DOCUMENTS_PATH)
         print(f"Created directory: {DOCUMENTS_PATH}. Please add PDF/TXT files there.")
         return
 
-    # Loaders for different file types
     loaders = {
         ".pdf": PyPDFLoader,
         ".txt": TextLoader,
@@ -40,7 +34,6 @@ def ingest_documents():
         print("No documents found to ingest.")
         return
 
-    # Split documents into chunks
     print(f"Splitting {len(documents)} documents into chunks...")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -50,7 +43,6 @@ def ingest_documents():
     chunks = text_splitter.split_documents(documents)
     print(f"Created {len(chunks)} chunks.")
 
-    # Add to vector store
     print("Adding chunks to ChromaDB...")
     vector_store = get_vector_store()
     vector_store.add_documents(chunks)
