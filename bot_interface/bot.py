@@ -21,6 +21,9 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+# Keep track of active sessions to allow users to "refresh" their memory
+user_sessions = {}
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -33,7 +36,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - Start the bot\n"
         "/help - Show this help message\n"
         "/status - Check agent system status\n"
-        "/ingest - Manually trigger document ingestion"
+        "/ingest - Manually trigger document ingestion\n"
+        "/refresh - Clear the bot's memory and start a fresh conversation"
     )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
 
@@ -73,12 +77,20 @@ async def ingest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Ingestion failed: {e}")
 
-
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def refresh_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Refreshes the user's session by changing their LangGraph thread_id."""
+    chat_id = update.effective_chat.id
+    user_sessions[chat_id] = user_sessions.get(chat_id, 0) + 1
+    await context.bot.send_message(
+        chat_id=chat_id, 
+        text="🔄 Session refreshed! I have cleared my memory of our previous conversation. How can I help you now?"
+    )async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     chat_id = update.effective_chat.id
-    thread_id = str(chat_id)
+    
+    # Generate a unique thread ID based on the user's current session
+    session_id = user_sessions.get(chat_id, 0)
+    thread_id = f"{chat_id}_{session_id}"
     
     try:
         await context.bot.send_chat_action(chat_id=chat_id, action="typing")
@@ -126,12 +138,14 @@ def setup_bot():
     help_handler = CommandHandler('help', help_command)
     status_handler = CommandHandler('status', status_command)
     ingest_handler = CommandHandler('ingest', ingest_command)
+    refresh_handler = CommandHandler('refresh', refresh_command)
     message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message)
     
     application.add_handler(start_handler)
     application.add_handler(help_handler)
     application.add_handler(status_handler)
     application.add_handler(ingest_handler)
+    application.add_handler(refresh_handler)
     application.add_handler(message_handler)
     return application
 

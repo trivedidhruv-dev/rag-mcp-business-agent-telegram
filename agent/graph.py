@@ -53,6 +53,7 @@ def call_model(state: State):
             "If they want to schedule something, use the Calendar tool. "
             "If they ask about current events, news, or general information not in documents, use the web search tool. "
             "If they want to send an email or log a ticket, use those tools. If no email address is specified, use 'defoperator28@gmail.com' as the default recipient. "
+            "IMPORTANT: If the user asks you to send information (like a Stripe payment) to an email, you must FIRST use the appropriate tool to get that information, and THEN use the send_automated_email tool to send it. Make sure you actually call the email tool and tell the user when you have done so."
             "Be professional and concise."
         ))
         messages = [system_msg] + messages
