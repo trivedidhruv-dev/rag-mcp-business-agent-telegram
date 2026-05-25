@@ -19,7 +19,8 @@ def send_email(to_email: str, subject: str, body: str):
     msg['To'] = to_email
 
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5.0) as server:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=10.0) as server:
+            server.starttls()
             server.login(sender, password)
             server.sendmail(sender, [to_email], msg.as_string())
         return {"status": "success", "message": f"Email sent successfully to {to_email}"}
