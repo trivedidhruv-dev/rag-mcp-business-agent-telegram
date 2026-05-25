@@ -18,18 +18,24 @@ load_dotenv()
 class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
+_model_instance = None
+
 # 1. Initialize the LLM with tool support
 def get_model():
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        raise ValueError("GROQ_API_KEY not found in .env")
-    
-    llm = ChatGroq(
-        api_key=api_key,
-        model_name="llama-3.3-70b-versatile",
-        temperature=0
-    )
-    return llm.bind_tools(tools)
+    global _model_instance
+    if _model_instance is None:
+        print("Initializing LLM Model (Singleton)...")
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY not found in .env")
+        
+        llm = ChatGroq(
+            api_key=api_key,
+            model_name="llama-3.3-70b-versatile",
+            temperature=0
+        )
+        _model_instance = llm.bind_tools(tools)
+    return _model_instance
 
 # 2. Define the nodes
 def call_model(state: State):
@@ -46,10 +52,15 @@ def call_model(state: State):
             "If they ask about payments or orders, use the Stripe or Shopify tools. "
             "If they want to schedule something, use the Calendar tool. "
             "If they ask about current events, news, or general information not in documents, use the web search tool. "
-            "If they want to send an email or log a ticket, use those tools. "
+            "If they want to send an email or log a ticket, use those tools. If no email address is specified, use 'defoperator28@gmail.com' as the default recipient. "
             "Be professional and concise."
         ))
         messages = [system_msg] + messages
+    else:
+        # Truncate context to save memory and speed up TTFT: keep system prompt + last 10 messages
+        system_msg = next(m for m in messages if isinstance(m, SystemMessage))
+        other_messages = [m for m in messages if not isinstance(m, SystemMessage)]
+        messages = [system_msg] + other_messages[-10:]
         
     model = get_model()
     response = model.invoke(messages)

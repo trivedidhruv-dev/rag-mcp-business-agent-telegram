@@ -26,14 +26,20 @@ def get_embeddings():
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
+_vector_store_instance = None
+
 def get_vector_store():
-    """Returns the Chroma vector store instance."""
-    embeddings = get_embeddings()
-    return Chroma(
-        persist_directory=CHROMA_PATH,
-        embedding_function=embeddings,
-        collection_name=COLLECTION_NAME
-    )
+    """Returns the Chroma vector store instance, initializing it once if needed."""
+    global _vector_store_instance
+    if _vector_store_instance is None:
+        print("Initializing Vector Store (Singleton)...")
+        embeddings = get_embeddings()
+        _vector_store_instance = Chroma(
+            persist_directory=CHROMA_PATH,
+            embedding_function=embeddings,
+            collection_name=COLLECTION_NAME
+        )
+    return _vector_store_instance
 
 def query_rag(query_text: str, k: int = 3):
     """
