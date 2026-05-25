@@ -95,6 +95,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     thread_id = f"{chat_id}_{session_id}"
     
     try:
+        processing_msg = await context.bot.send_message(chat_id=chat_id, text="⏳ Processing your request... Please wait.")
         await context.bot.send_chat_action(chat_id=chat_id, action="typing")
         
         # 1. Start/Continue Agent
@@ -102,12 +103,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # 2. Send Response
         if response:
-            await context.bot.send_message(chat_id=chat_id, text=response)
+            await processing_msg.edit_text(text=response)
+        else:
+            await processing_msg.delete()
             
     except Exception as e:
         logging.error(f"Error in handle_message: {e}")
         traceback.print_exc()
-        await context.bot.send_message(chat_id=chat_id, text=f"Error: {e}")
+        try:
+            await processing_msg.edit_text(text=f"Error: {e}")
+        except:
+            await context.bot.send_message(chat_id=chat_id, text=f"Error: {e}")
 
 
 

@@ -19,12 +19,12 @@ def send_email(to_email: str, subject: str, body: str):
     msg['To'] = to_email
 
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5.0) as server:
             server.login(sender, password)
             server.sendmail(sender, [to_email], msg.as_string())
         return {"status": "success", "message": f"Email sent successfully to {to_email}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"Network issue or timeout: {str(e)}"}
 
 def create_ticket(title: str, description: str):
     """Simulates ticket creation by logging to a file."""

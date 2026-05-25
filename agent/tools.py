@@ -29,10 +29,14 @@ def search_customer_db(query: str):
     return result
 
 @tool
-def get_customer_details(customer_id: int):
+def get_customer_details(customer_id: str):
     """
     Get all details for a specific customer using their unique ID.
     """
+    try:
+        customer_id = int(customer_id)
+    except ValueError:
+        pass
     result = str(get_record(customer_id))
     log_tool_use("get_customer_details", {"customer_id": customer_id}, result)
     return result
