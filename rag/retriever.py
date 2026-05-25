@@ -23,7 +23,8 @@ def get_embeddings():
     print("Connecting to Hugging Face Inference API...")
     return HuggingFaceInferenceAPIEmbeddings(
         api_key=hf_token,
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        api_url="https://router.huggingface.co/hf-inference/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
     )
 
 _vector_store_instance = None
