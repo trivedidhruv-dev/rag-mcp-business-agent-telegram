@@ -7,32 +7,30 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def send_email(to_email: str, subject: str, body: str):
-    sender = os.getenv("GMAIL_SENDER")
-    password = os.getenv("GMAIL_APP_PASSWORD")
+    """Sends an email using Resend API."""
+    # Load Resend configuration
+    resend_key = os.getenv("RESEND_API_KEY")
+    sender = os.getenv("SENDER_EMAIL")
 
-    if not sender or not password:
-        return {"error": "Email credentials not configured."}
-
-    msg = MIMEMultipart()
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = to_email
-    msg.attach(MIMEText(body, "plain"))
+    if not resend_key or not sender:
+        return {"error": "Resend API credentials not configured in .env"}
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(sender, password)
-            server.sendmail(sender, [to_email], msg.as_string())
+        from resend import Resend
+        client = Resend(resend_key)
+        # Resend expects HTML; wrap plain body in <p>
+        response = client.emails.send({
+            "from": sender,
+            "to": [to_email],
+            "subject": subject,
+            "html": f"<p>{body}</p>"
+        })
+        # The response may contain an 'id' on success or an 'error' dict
+        if isinstance(response, dict) and response.get("error"):
+            return {"status": "error", "message": response["error"]["message"]}
         return {"status": "success", "message": f"Email sent to {to_email}"}
-    except smtplib.SMTPAuthenticationError:
-        return {"status": "error", "message": "Auth failed. Check GMAIL_APP_PASSWORD."}
-    except smtplib.SMTPException as e:
-        return {"status": "error", "message": f"SMTP error: {str(e)}"}
     except Exception as e:
-        return {"status": "error", "message": f"Network error: {str(e)}"}
+        return {"status": "error", "message": f"Resend email failed: {str(e)}"}
 
 def create_ticket(title: str, description: str):
     ticket_log = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tickets.txt")

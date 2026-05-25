@@ -4,7 +4,7 @@ def get_stripe_status(customer_email: str):
     """Simulates checking Stripe payment history."""
     # Mock database of payments
     payments = {
-        "defoperator28@gmail.com": {"status": "Succeeded", "last_amount": "$99.00", "date": "2024-02-15"},
+        "operatordef978@gmail.com": {"status": "Succeeded", "last_amount": "$99.00", "date": "2024-02-15"},
         "bob@example.com": {"status": "Failed", "last_amount": "$29.00", "date": "2024-03-01"},
         "charlie@example.com": {"status": "Pending", "last_amount": "$49.00", "date": "2024-03-02"},
     }
