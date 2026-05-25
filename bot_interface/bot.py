@@ -84,7 +84,9 @@ async def refresh_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=chat_id, 
         text="🔄 Session refreshed! I have cleared my memory of our previous conversation. How can I help you now?"
-    )async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    )
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     chat_id = update.effective_chat.id
     
