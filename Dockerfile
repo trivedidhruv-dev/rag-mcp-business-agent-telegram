@@ -1,5 +1,5 @@
-# Use a slim Python 3.10 image
-FROM python:3.10-slim
+# Use a Python 3.11 image based on Debian Bookworm (native SQLite 3.40+ for ChromaDB)
+FROM python:3.11-slim-bookworm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -19,6 +19,14 @@ COPY . .
 
 # Ensure necessary directories exist
 RUN mkdir -p chroma_db rag/documents
+
+# Hugging Face runs containers with user ID 1000 (not root). 
+# We must give write permissions to the app directory so ChromaDB and SQLite don't crash.
+RUN chmod -R 777 /app
+
+# Set the port for Hugging Face Space health check
+ENV PORT=7860
+EXPOSE 7860
 
 # Run the application
 CMD ["python", "main.py"]

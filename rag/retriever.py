@@ -7,7 +7,7 @@ except ImportError:
 
 import os
 import chromadb
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_chroma import Chroma
 
 # Configuration
@@ -15,9 +15,16 @@ CHROMA_PATH = os.path.join(os.getcwd(), "chroma_db")
 COLLECTION_NAME = "business_docs"
 
 def get_embeddings():
-    """Returns the local embedding model."""
-    print("Loading embedding model (this may take a minute the first time)...")
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    """Returns the remote Hugging Face API embedding model."""
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        raise ValueError("HF_TOKEN environment variable is missing! Please add it to your .env file or Render Secrets.")
+        
+    print("Connecting to Hugging Face Inference API...")
+    return HuggingFaceInferenceAPIEmbeddings(
+        api_key=hf_token,
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
 
 def get_vector_store():
     """Returns the Chroma vector store instance."""

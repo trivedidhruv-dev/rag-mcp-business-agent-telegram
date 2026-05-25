@@ -73,6 +73,41 @@ async def ingest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Ingestion failed: {e}")
 
+async def process_agent_state(chat_id: int, thread_id: str, context: ContextTypes.DEFAULT_TYPE, ai_response: str):
+    """Helper to check if agent is paused for tool approval, or send the final response."""
+    state = await agent_app.aget_state({"configurable": {"thread_id": thread_id}})
+    
+    if state.next:  # If the graph is paused at "tools"
+        last_msg = state.values["messages"][-1]
+        tool_call = last_msg.tool_calls[0]
+        tool_name = tool_call["name"]
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Approve", callback_data=f"approve_{thread_id}"),
+                InlineKeyboardButton("❌ Stop", callback_data=f"stop_{thread_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        approval_msg = (
+            f"🛡️ **Action Required**\n"
+            f"The agent wants to use: `{tool_name}`\n"
+            f"Details: `{tool_call['args']}`\n\n"
+            "Should I proceed?"
+        )
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=approval_msg,
+            reply_markup=reply_markup,
+            parse_mode="Markdown"
+        )
+    else:
+        # Normal response if no tool call was pending
+        if ai_response:
+            await context.bot.send_message(chat_id=chat_id, text=ai_response)
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     chat_id = update.effective_chat.id
@@ -85,40 +120,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await get_response(user_text, thread_id=thread_id)
         
         # 2. Check for Interrupt (HITL)
-        state = await agent_app.aget_state({"configurable": {"thread_id": thread_id}})
-        
-        if state.next:  # If the graph is paused at "tools"
-            last_msg = state.values["messages"][-1]
-            tool_call = last_msg.tool_calls[0]
-            tool_name = tool_call["name"]
-            
-            # For now, let's require approval for ALL tools to show the flow, 
-            # or specifically for email. Let's do all for maximum "Wow" factor.
-            
-            keyboard = [
-                [
-                    InlineKeyboardButton("✅ Approve", callback_data=f"approve_{thread_id}"),
-                    InlineKeyboardButton("❌ Stop", callback_data=f"stop_{thread_id}")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            approval_msg = (
-                f"🛡️ **Action Required**\n"
-                f"The agent wants to use: `{tool_name}`\n"
-                f"Details: `{tool_call['args']}`\n\n"
-                "Should I proceed?"
-            )
-            
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=approval_msg,
-                reply_markup=reply_markup,
-                parse_mode="Markdown"
-            )
-        else:
-            # Normal response if no tool call was pending
-            await context.bot.send_message(chat_id=chat_id, text=response)
+        await process_agent_state(chat_id, thread_id, context, response)
             
     except Exception as e:
         logging.error(f"Error in handle_message: {e}")
@@ -132,34 +134,43 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     data = query.data
     action, thread_id = data.split("_")
+    config = {"configurable": {"thread_id": thread_id}}
     
     try:
         if action == "approve":
             await query.edit_message_text("✅ Approved! Processing...")
-            # Resume the agent
-            config = {"configurable": {"thread_id": thread_id}}
             # Resuming with None tells LangGraph to just proceed with existing state
             final_state = await agent_app.ainvoke(None, config=config)
             
-            # Send the final response
+            # Send the final response or prompt for the NEXT tool
             ai_response = final_state["messages"][-1].content
-            await context.bot.send_message(chat_id=query.message.chat_id, text=ai_response)
+            await process_agent_state(query.message.chat_id, thread_id, context, ai_response)
             
         else:
             await query.edit_message_text("❌ Action stopped by user.")
-            # To "cancel", we inject a fake tool error message so the agent stops or reacts
-            state = await agent_app.aget_state({"configurable": {"thread_id": thread_id}})
+            
+            # To cancel a tool call, we must update the state AS the 'tools' node
+            state = await agent_app.aget_state(config)
             last_msg = state.values["messages"][-1]
             tool_call_id = last_msg.tool_calls[0]["id"]
             
             cancel_msg = ToolMessage(
                 tool_call_id=tool_call_id,
+                name=last_msg.tool_calls[0]["name"],
                 content="Action cancelled by user approval check."
             )
             
-            # Resume with the cancellation message
-            await agent_app.ainvoke({"messages": [cancel_msg]}, config={"configurable": {"thread_id": thread_id}})
-            await context.bot.send_message(chat_id=query.message.chat_id, text="Agent has been informed the action was cancelled.")
+            # Update state as if the 'tools' node ran and returned the cancel message
+            await agent_app.aupdate_state(
+                config,
+                {"messages": [cancel_msg]},
+                as_node="tools"
+            )
+            
+            # Resume the agent so it can react to the cancellation
+            final_state = await agent_app.ainvoke(None, config=config)
+            ai_response = final_state["messages"][-1].content
+            await process_agent_state(query.message.chat_id, thread_id, context, ai_response)
 
     except Exception as e:
         logging.error(f"Error in handle_approval: {e}")
@@ -173,8 +184,23 @@ def setup_bot():
         print("Error: TELEGRAM_BOT_TOKEN not found in Environment Variables")
         return None
         
-    application = ApplicationBuilder().token(TOKEN).build()
+    from telegram.request import HTTPXRequest
     
+    # Configure custom HTTPX request to bypass broken system proxies in HF Spaces
+    request = HTTPXRequest(
+        connection_pool_size=8,
+        proxy=None, # Explicitly ignore any HF proxy environment variables
+        connect_timeout=30.0,
+        read_timeout=30.0,
+        write_timeout=30.0
+    )
+    
+    application = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .request(request)
+        .build()
+    )    
     start_handler = CommandHandler('start', start)
     help_handler = CommandHandler('help', help_command)
     status_handler = CommandHandler('status', status_command)

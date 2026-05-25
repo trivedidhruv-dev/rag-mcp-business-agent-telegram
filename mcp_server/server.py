@@ -2,6 +2,10 @@ from mcp.server import Server
 from mcp.types import Tool, TextContent, ImageContent, EmbeddedResource
 import mcp.server.stdio
 import asyncio
+import sys
+
+# Increase recursion depth limit for complex tool calls
+sys.setrecursionlimit(2000)
 
 from mcp_server.db_tools import search_database, get_record, init_db
 from mcp_server.action_tools import send_email, create_ticket

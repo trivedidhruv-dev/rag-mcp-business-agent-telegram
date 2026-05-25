@@ -5,3 +5,18 @@
 2026-03-02 15:26:26,410 - INFO - TOOL USE: get_customer_details | ARGS: {'customer_id': 101} | RESULT: {'id': 101, 'name': 'Alice Smith', 'email': 'alice@example.com', 'plan': 'Premium', 'status': 'Active'}...
 2026-03-02 15:26:30,045 - INFO - ACTION: LLM REPLIED DIRECTLY | DETAILS: 
 2026-03-02 15:26:30,048 - INFO - ACTION: AGENT RESPONSE GENERATED | DETAILS: Output length: 117
+2026-03-26 16:47:51,248 - INFO - ACTION: USER MESSAGE RECEIVED | DETAILS: Thread: 6285220999 | Input: What is my name
+2026-03-26 16:47:55,332 - INFO - ACTION: LLM DECIDED TOOL USE | DETAILS: Tool: search_customer_db
+2026-03-26 16:47:55,342 - INFO - ACTION: AGENT RESPONSE GENERATED | DETAILS: Output length: 0
+2026-03-26 16:48:01,198 - INFO - TOOL USE: search_customer_db | ARGS: {'query': "user's name"} | RESULT: []...
+2026-03-26 16:48:05,383 - INFO - ACTION: LLM REPLIED DIRECTLY | DETAILS: 
+2026-03-26 16:50:35,063 - INFO - ACTION: USER MESSAGE RECEIVED | DETAILS: Thread: 6285220999 | Input: What is our policy on refunds for digital products
+2026-03-26 16:50:38,392 - INFO - ACTION: LLM DECIDED TOOL USE | DETAILS: Tool: search_company_documents
+2026-03-26 16:50:38,400 - INFO - ACTION: AGENT RESPONSE GENERATED | DETAILS: Output length: 0
+2026-03-26 16:50:49,102 - INFO - TOOL USE: search_company_documents | ARGS: {'query': 'refund policy for digital products'} | RESULT: ["# Company Refund Policy\n\n## Overview\nOur goal is to ensure customer satisfaction. If you are not happy with your purchase, we are here to help.\n\n## Refund Timeline\n- Customers have 30 calendar...
+2026-03-26 16:50:52,750 - INFO - ACTION: LLM REPLIED DIRECTLY | DETAILS: 
+2026-03-26 16:51:19,187 - INFO - ACTION: USER MESSAGE RECEIVED | DETAILS: Thread: 6285220999 | Input: What is the current status of Shopify order #1234
+2026-03-26 16:51:22,488 - INFO - ACTION: LLM DECIDED TOOL USE | DETAILS: Tool: track_shopify_order
+2026-03-26 16:51:22,493 - INFO - ACTION: AGENT RESPONSE GENERATED | DETAILS: Output length: 0
+2026-03-26 16:51:26,079 - INFO - TOOL USE: track_shopify_order | ARGS: {'order_id': '1234'} | RESULT: {'order_id': '1234', 'status': 'Delivered', 'tracking_number': 'TRK1102933', 'estimated_delivery': '2024-03-05'}...
+2026-03-26 16:51:29,402 - INFO - ACTION: LLM REPLIED DIRECTLY | DETAILS: 
